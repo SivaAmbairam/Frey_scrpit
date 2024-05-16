@@ -284,11 +284,11 @@ if __name__ == '__main__':
                             if product_id in read_log_file():
                                 continue
                             print('current datetime------>', datetime.now())
-                            dictionary_1 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                            dictionary = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
                                                           product_quantities=product_quantity,
                                                           product_prices=product_price,
                                                           product_urls=product_url)
-                            articles_df = pd.DataFrame([dictionary_1])
+                            articles_df = pd.DataFrame([dictionary])
                             articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
                                                         inplace=True)
                             if os.path.isfile(f'{file_name}.csv'):
@@ -397,9 +397,9 @@ if __name__ == '__main__':
                                 if product_id in read_log_file():
                                     continue
                                 print('current datetime------>', datetime.now())
-                                dictionary_2 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                                dictionary = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
                                                               product_quantities=product_quantity, product_prices=product_price, product_urls=product_url)
-                                articles_df = pd.DataFrame([dictionary_2])
+                                articles_df = pd.DataFrame([dictionary])
                                 articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
                                                             inplace=True)
                                 if os.path.isfile(f'{file_name}.csv'):
@@ -419,9 +419,9 @@ if __name__ == '__main__':
                             if product_url in read_log_file():
                                 continue
                             print('current datetime------>', datetime.now())
-                            dictionary_3 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                            dictionary = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
                                                           product_quantities=product_quantity, product_prices=product_price, product_urls=product_url)
-                            articles_df = pd.DataFrame([dictionary_3])
+                            articles_df = pd.DataFrame([dictionary])
                             articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
                                                         inplace=True)
                             if os.path.isfile(f'{file_name}.csv'):

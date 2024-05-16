@@ -144,138 +144,111 @@ if __name__ == '__main__':
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
     }
     soup = get_soup_verify(url, headers)
-    all_datas = soup.find('ul', id='departmentsMenu').find_all('li', recursive=False)
-    for single_product in all_datas:
-        product_data = single_product.find('ul', class_='categoryList').find_all('ul',
-                                                                                 class_='subcategoryList subcategoryList-level3')
-        for main_product in product_data:
-            sub_product = main_product.find_all('li', class_='')
-            for products in sub_product:
-                if 'shop-by-learning-environment/' in str(products):
-                    main_url = f'{base_url}{products.a['href']}'
-                    if main_url in read_log_file():
+    all_datas = soup.find_all('ul', class_='subcategoryList subcategoryList-level3')
+    for main_product in all_datas:
+        '''PRODUCT CATEGORY'''
+        product_category = main_product.find('li').extract().text.strip()
+        sub_product = main_product.find_all('li', class_='')
+        for products in sub_product:
+            product_sub_category = products.a.text.strip()
+            main_url = f'{base_url}{products.a['href']}'
+            if 'shop-by-learning-environment/' in str(products):
+                main_url = f'{base_url}{products.a['href']}'
+                if main_url in read_log_file():
+                    continue
+                sub_request = get_soup_verify(main_url, headers)
+                for other_content in sub_request.find_all('div', class_='ssi-card-container'):
+                    inner_href = other_content.a['href']
+                    if 'http' not in str(inner_href):
+                        inner_url = f'{base_url}{inner_href}'
+                    else:
+                        inner_url = inner_href
+                    inner_request = get_soup_verify(inner_url, headers)
+                    if inner_request is None:
                         continue
-                    sub_request = get_soup_verify(main_url, headers)
-                    for other_content in sub_request.find_all('div', class_='ssi-card-container'):
-                        inner_href = other_content.a['href']
-                        if 'http' not in str(inner_href):
-                            inner_url = f'{base_url}{inner_href}'
-                        else:
-                            inner_url = inner_href
-                        inner_request = get_soup_verify(inner_url, headers)
-                        if inner_request is None:
-                            continue
+                    '''GET PAGINATION'''
+                    if inner_request.find('span', class_='product_count_label'):
                         page_id = inner_request.find('meta', attrs={'name': 'pageId'})['content']
-                        '''GET PAGINATION'''
-                        if inner_request.find('span', class_='product_count_label'):
-                            page_content = \
-                            strip_it(inner_request.find('span', class_='product_count_label').text).replace(',',
-                                                                                                            '').split(
-                                '-', 1)[-1].split('of', 1)
-                            count = page_content[-1].strip()
-                            page_count = page_content[0].strip()
-                            total_pages = math.ceil(int(count) / int(page_count))
-                            for i in range(0, int(total_pages)):
-                                page_nav = int(i) * int(24)
-                                params = {
-                                    'top_category3': '',
-                                    'top_category2': '',
-                                    'top_category5': '',
-                                    'top_category4': '',
-                                    'advancedSearch': '',
-                                    'orgId': '-2000',
-                                    'manufacturer': '',
-                                    'metaData': '',
-                                    'enableSKUListView': 'false',
-                                    'catalogId': '10101',
-                                    'searchTerm': '',
-                                    'resultsPerPage': '24',
-                                    'filterFacet': '',
-                                    'resultCatEntryType': '',
-                                    'gridPosition': '',
-                                    'top_category': '3074457345616724775',
-                                    'categoryFacetHierarchyPath': '',
-                                    'ajaxStoreImageDir': '/wcsstore/SSIB2BStorefrontAssetStore/',
-                                    'searchType': '',
-                                    'filterTerm': '',
-                                    'searchTermScope': '',
-                                    'storeId': '10801',
-                                    'ddkey': 'ProductListingView_6_3074457345618259675_3074457345618288753',
-                                    'sType': 'SimpleSearch',
-                                    'emsName': 'Widget_CatalogEntryList-SSI_3074457345618795066',
-                                    'disableProductCompare': 'false',
-                                    'langId': '-1',
-                                    'facet': '',
-                                    'categoryId': f'{page_id}',
-                                    'parent_category_rn': '3074457345616724775',
-                                }
-                                payload = {
-                                    'contentBeginIndex': '0',
-                                    'productBeginIndex': f'{page_nav}',
-                                    'beginIndex': f'{page_nav}',
-                                    'orderBy': '',
-                                    'facetId': '',
-                                    'pageView': '',
-                                    'resultType': 'both',
-                                    'orderByContent': '',
-                                    'searchTerm': '',
-                                    'facet': '',
-                                    'facetLimit': '',
-                                    'minPrice': '',
-                                    'maxPrice': '',
-                                    'pageSize': '',
-                                    'loadProductsList': 'true',
-                                    'storeId': '10801',
-                                    'catalogId': '10101',
-                                    'langId': '-1',
-                                    'homePageURL': '/en/ssistore',
-                                    'commandContextCurrency': 'USD',
-                                    'urlPrefixForHTTPS': 'https://www.schoolspecialty.com',
-                                    'urlPrefixForHTTP': 'http://www.schoolspecialty.com',
-                                    'wcc_integration_origin': '',
-                                    'avToken': 'fc358ed3-dee6-40ed-92ba-e8946491838a',
-                                    'avURL': 'https://api.edq.com/capture/address/v2/search?query=',
-                                    'avCountryCode': 'usa',
-                                    'userId': '-1002',
-                                    'enableSKUListView': 'FALSE',
-                                    'widgetPrefix': '6_3074457345618288753',
-                                    'pgl_widgetId': '3074457345618288753',
-                                    'objectId': '_6_3074457345618259675_3074457345618288753',
-                                    'requesttype': 'ajax',
-                                }
-                                post_url = 'https://www.schoolspecialty.com/ProductListingView'
-                                response = requests.post(post_url,
-                                                         params=params, cookies=cookies, headers=post_header,
-                                                         data=payload)
-                                page_soup = BeautifulSoup(response.text, 'html.parser')
-                                if page_soup is None:
-                                    continue
-                                content_url = page_soup.find_all('div', class_='product_info item')
-                                for single_content in content_url:
-                                    product_name = get_product_name(single_content)
-                                    product_url = get_product_url(single_content)
-                                    product_price = get_product_price(single_content)
-                                    product_quantity = get_product_quantity(single_content)
-                                    product_id = get_product_id(single_content)
-                                    print(product_url)
-                                    if product_id in read_log_file():
-                                        continue
-                                    print('current datetime------>', datetime.now())
-                                    dictionary = get_dictionary(product_ids=product_id, product_names=product_name,
-                                                                product_quantities=product_quantity,
-                                                                product_prices=
-                                                                product_price, product_urls=product_url)
-                                    articles_df = pd.DataFrame([dictionary])
-                                    articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
-                                                                inplace=True)
-                                    if os.path.isfile(f'{file_name}.csv'):
-                                        articles_df.to_csv(f'{file_name}.csv', index=False, header=False, mode='a')
-                                    else:
-                                        articles_df.to_csv(f'{file_name}.csv', index=False)
-                                    write_visited_log(product_id)
-
-                        else:
-                            content_url = inner_request.find_all('div', class_='product_info item')
+                        page_content = strip_it(inner_request.find('span', class_='product_count_label').text).replace(',', '').split('-', 1)[-1].split('of', 1)
+                        count = page_content[-1].strip()
+                        page_count = page_content[0].strip()
+                        total_pages = math.ceil(int(count) / int(page_count))
+                        for i in range(0, int(total_pages)):
+                            page_nav = int(i) * int(24)
+                            params = {
+                                'top_category3': '',
+                                'top_category2': '',
+                                'top_category5': '',
+                                'top_category4': '',
+                                'advancedSearch': '',
+                                'orgId': '-2000',
+                                'manufacturer': '',
+                                'metaData': '',
+                                'enableSKUListView': 'false',
+                                'catalogId': '10101',
+                                'searchTerm': '',
+                                'resultsPerPage': '24',
+                                'filterFacet': '',
+                                'resultCatEntryType': '',
+                                'gridPosition': '',
+                                'top_category': '3074457345616724775',
+                                'categoryFacetHierarchyPath': '',
+                                'ajaxStoreImageDir': '/wcsstore/SSIB2BStorefrontAssetStore/',
+                                'searchType': '',
+                                'filterTerm': '',
+                                'searchTermScope': '',
+                                'storeId': '10801',
+                                'ddkey': 'ProductListingView_6_3074457345618259675_3074457345618288753',
+                                'sType': 'SimpleSearch',
+                                'emsName': 'Widget_CatalogEntryList-SSI_3074457345618795066',
+                                'disableProductCompare': 'false',
+                                'langId': '-1',
+                                'facet': '',
+                                'categoryId': f'{page_id}',
+                                'parent_category_rn': '3074457345616724775',
+                            }
+                            payload = {
+                                'contentBeginIndex': '0',
+                                'productBeginIndex': f'{page_nav}',
+                                'beginIndex': f'{page_nav}',
+                                'orderBy': '',
+                                'facetId': '',
+                                'pageView': '',
+                                'resultType': 'both',
+                                'orderByContent': '',
+                                'searchTerm': '',
+                                'facet': '',
+                                'facetLimit': '',
+                                'minPrice': '',
+                                'maxPrice': '',
+                                'pageSize': '',
+                                'loadProductsList': 'true',
+                                'storeId': '10801',
+                                'catalogId': '10101',
+                                'langId': '-1',
+                                'homePageURL': '/en/ssistore',
+                                'commandContextCurrency': 'USD',
+                                'urlPrefixForHTTPS': 'https://www.schoolspecialty.com',
+                                'urlPrefixForHTTP': 'http://www.schoolspecialty.com',
+                                'wcc_integration_origin': '',
+                                'avToken': 'fc358ed3-dee6-40ed-92ba-e8946491838a',
+                                'avURL': 'https://api.edq.com/capture/address/v2/search?query=',
+                                'avCountryCode': 'usa',
+                                'userId': '-1002',
+                                'enableSKUListView': 'FALSE',
+                                'widgetPrefix': '6_3074457345618288753',
+                                'pgl_widgetId': '3074457345618288753',
+                                'objectId': '_6_3074457345618259675_3074457345618288753',
+                                'requesttype': 'ajax',
+                            }
+                            post_url = 'https://www.schoolspecialty.com/ProductListingView'
+                            response = requests.post(post_url,
+                                                     params=params, cookies=cookies, headers=post_header,
+                                                     data=payload)
+                            page_soup = BeautifulSoup(response.text, 'html.parser')
+                            if page_soup is None:
+                                continue
+                            content_url = page_soup.find_all('div', class_='product_info item')
                             for single_content in content_url:
                                 product_name = get_product_name(single_content)
                                 product_url = get_product_url(single_content)
@@ -285,13 +258,12 @@ if __name__ == '__main__':
                                 print(product_url)
                                 if product_id in read_log_file():
                                     continue
-
                                 print('current datetime------>', datetime.now())
-                                dictionary_1 = get_dictionary(product_ids=product_id, product_names=product_name,
-                                                              product_quantities=product_quantity,
-                                                              product_prices=product_price,
-                                                              product_urls=product_url)
-                                articles_df = pd.DataFrame([dictionary_1])
+                                dictionary = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                                                            product_quantities=product_quantity,
+                                                            product_prices=
+                                                            product_price, product_urls=product_url)
+                                articles_df = pd.DataFrame([dictionary])
                                 articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
                                                             inplace=True)
                                 if os.path.isfile(f'{file_name}.csv'):
@@ -299,124 +271,122 @@ if __name__ == '__main__':
                                 else:
                                     articles_df.to_csv(f'{file_name}.csv', index=False)
                                 write_visited_log(product_id)
-                    write_visited_log(main_url)
-                else:
-                    if 'ideas-resources' not in str(products):
-                        main_url = f'{base_url}{products.a['href']}'
-                        if main_url in read_log_file():
-                            continue
-                        inner_request = get_soup_verify(main_url, headers)
-                        if inner_request is None:
-                            continue
-                        page_id = inner_request.find('meta', attrs={'name': 'pageId'})['content']
-                        '''GET PAGINATION'''
-                        if inner_request.find('span', class_='product_count_label'):
-                            page_content = \
-                            strip_it(inner_request.find('span', class_='product_count_label').text).replace(',',
-                                                                                                            '').split(
-                                '-', 1)[-1].split('of', 1)
-                            count = page_content[-1].strip()
-                            page_count = page_content[0].strip()
-                            total_pages = math.ceil(int(count) / int(page_count))
-                            for i in range(0, int(total_pages)):
-                                page_nav = int(i) * int(24)
-                                params = {
-                                    'top_category3': '',
-                                    'top_category2': '',
-                                    'top_category5': '',
-                                    'top_category4': '',
-                                    'advancedSearch': '',
-                                    'orgId': '-2000',
-                                    'manufacturer': '',
-                                    'metaData': '',
-                                    'enableSKUListView': 'false',
-                                    'catalogId': '10101',
-                                    'searchTerm': '',
-                                    'resultsPerPage': '24',
-                                    'filterFacet': '',
-                                    'resultCatEntryType': '',
-                                    'gridPosition': '',
-                                    'top_category': '3074457345616724775',
-                                    'categoryFacetHierarchyPath': '',
-                                    'ajaxStoreImageDir': '/wcsstore/SSIB2BStorefrontAssetStore/',
-                                    'searchType': '',
-                                    'filterTerm': '',
-                                    'searchTermScope': '',
-                                    'storeId': '10801',
-                                    'ddkey': 'ProductListingView_6_3074457345618259675_3074457345618288753',
-                                    'sType': 'SimpleSearch',
-                                    'emsName': 'Widget_CatalogEntryList-SSI_3074457345618795066',
-                                    'disableProductCompare': 'false',
-                                    'langId': '-1',
-                                    'facet': '',
-                                    'categoryId': f'{page_id}',
-                                    'parent_category_rn': '3074457345616724775',
-                                }
-                                payload = {
-                                    'contentBeginIndex': '0',
-                                    'productBeginIndex': f'{page_nav}',
-                                    'beginIndex': f'{page_nav}',
-                                    'orderBy': '',
-                                    'facetId': '',
-                                    'pageView': '',
-                                    'resultType': 'both',
-                                    'orderByContent': '',
-                                    'searchTerm': '',
-                                    'facet': '',
-                                    'facetLimit': '',
-                                    'minPrice': '',
-                                    'maxPrice': '',
-                                    'pageSize': '',
-                                    'loadProductsList': 'true',
-                                    'storeId': '10801',
-                                    'catalogId': '10101',
-                                    'langId': '-1',
-                                    'homePageURL': '/en/ssistore',
-                                    'commandContextCurrency': 'USD',
-                                    'urlPrefixForHTTPS': 'https://www.schoolspecialty.com',
-                                    'urlPrefixForHTTP': 'http://www.schoolspecialty.com',
-                                    'wcc_integration_origin': '',
-                                    'avToken': 'fc358ed3-dee6-40ed-92ba-e8946491838a',
-                                    'avURL': 'https://api.edq.com/capture/address/v2/search?query=',
-                                    'avCountryCode': 'usa',
-                                    'userId': '-1002',
-                                    'enableSKUListView': 'FALSE',
-                                    'widgetPrefix': '6_3074457345618288753',
-                                    'pgl_widgetId': '3074457345618288753',
-                                    'objectId': '_6_3074457345618259675_3074457345618288753',
-                                    'requesttype': 'ajax',
-                                }
-                                response = requests.post('https://www.schoolspecialty.com/ProductListingView',
-                                                         params=params, cookies=cookies, headers=post_header,
-                                                         data=payload)
-                                page_soup = BeautifulSoup(response.text, 'html.parser')
-                                if page_soup is None:
-                                    continue
-                                content_url = page_soup.find_all('div', class_='product_info item')
-                                for single_content in content_url:
-                                    product_name = get_product_name(single_content)
-                                    product_url = get_product_url(single_content)
-                                    product_price = get_product_price(single_content)
-                                    product_quantity = get_product_quantity(single_content)
-                                    product_id = get_product_id(single_content)
-                                    print(product_url)
-                                    if product_id in read_log_file():
-                                        continue
-                                    print('current datetime------>', datetime.now())
-                                    dictionary_2 = get_dictionary(product_ids=product_id, product_names=product_name,
-                                                                  product_quantities=product_quantity,
-                                                                  product_prices=product_price,
-                                                                  product_urls=product_url)
-                                    articles_df = pd.DataFrame([dictionary_2])
-                                    articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
-                                                                inplace=True)
-                                    if os.path.isfile(f'{file_name}.csv'):
-                                        articles_df.to_csv(f'{file_name}.csv', index=False, header=False, mode='a')
-                                    else:
-                                        articles_df.to_csv(f'{file_name}.csv', index=False)
-                                    write_visited_log(product_id)
-                        else:
-                            content_url = inner_request.find_all('div', class_='product_info item')
+
+                    else:
+                        content_url = inner_request.find_all('div', class_='product_info item')
+                        for single_content in content_url:
+                            product_name = get_product_name(single_content)
+                            product_url = get_product_url(single_content)
+                            product_price = get_product_price(single_content)
+                            product_quantity = get_product_quantity(single_content)
+                            product_id = get_product_id(single_content)
+                            print(product_url)
+                            if product_id in read_log_file():
+                                continue
+                            print('current datetime------>', datetime.now())
+                            dictionary_1 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                                                          product_quantities=product_quantity,
+                                                          product_prices=product_price,
+                                                          product_urls=product_url)
+                            articles_df = pd.DataFrame([dictionary_1])
+                            articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
+                                                        inplace=True)
+                            if os.path.isfile(f'{file_name}.csv'):
+                                articles_df.to_csv(f'{file_name}.csv', index=False, header=False, mode='a')
+                            else:
+                                articles_df.to_csv(f'{file_name}.csv', index=False)
+                            write_visited_log(product_id)
+                write_visited_log(main_url)
+            else:
+                if 'ideas-resources' not in str(products):
+                    main_url = f'{base_url}{products.a['href']}'
+                    if main_url in read_log_file():
+                        continue
+                    inner_request = get_soup_verify(main_url, headers)
+                    if inner_request is None:
+                        continue
+                    page_id = inner_request.find('meta', attrs={'name': 'pageId'})['content']
+                    '''GET PAGINATION'''
+                    if inner_request.find('span', class_='product_count_label'):
+                        page_content = strip_it(inner_request.find('span', class_='product_count_label').text).replace(',', '').split('-', 1)[-1].split('of', 1)
+                        count = page_content[-1].strip()
+                        page_count = page_content[0].strip()
+                        total_pages = math.ceil(int(count) / int(page_count))
+                        for i in range(0, int(total_pages)):
+                            page_nav = int(i) * int(24)
+                            params = {
+                                'top_category3': '',
+                                'top_category2': '',
+                                'top_category5': '',
+                                'top_category4': '',
+                                'advancedSearch': '',
+                                'orgId': '-2000',
+                                'manufacturer': '',
+                                'metaData': '',
+                                'enableSKUListView': 'false',
+                                'catalogId': '10101',
+                                'searchTerm': '',
+                                'resultsPerPage': '24',
+                                'filterFacet': '',
+                                'resultCatEntryType': '',
+                                'gridPosition': '',
+                                'top_category': '3074457345616724775',
+                                'categoryFacetHierarchyPath': '',
+                                'ajaxStoreImageDir': '/wcsstore/SSIB2BStorefrontAssetStore/',
+                                'searchType': '',
+                                'filterTerm': '',
+                                'searchTermScope': '',
+                                'storeId': '10801',
+                                'ddkey': 'ProductListingView_6_3074457345618259675_3074457345618288753',
+                                'sType': 'SimpleSearch',
+                                'emsName': 'Widget_CatalogEntryList-SSI_3074457345618795066',
+                                'disableProductCompare': 'false',
+                                'langId': '-1',
+                                'facet': '',
+                                'categoryId': f'{page_id}',
+                                'parent_category_rn': '3074457345616724775',
+                            }
+                            payload = {
+                                'contentBeginIndex': '0',
+                                'productBeginIndex': f'{page_nav}',
+                                'beginIndex': f'{page_nav}',
+                                'orderBy': '',
+                                'facetId': '',
+                                'pageView': '',
+                                'resultType': 'both',
+                                'orderByContent': '',
+                                'searchTerm': '',
+                                'facet': '',
+                                'facetLimit': '',
+                                'minPrice': '',
+                                'maxPrice': '',
+                                'pageSize': '',
+                                'loadProductsList': 'true',
+                                'storeId': '10801',
+                                'catalogId': '10101',
+                                'langId': '-1',
+                                'homePageURL': '/en/ssistore',
+                                'commandContextCurrency': 'USD',
+                                'urlPrefixForHTTPS': 'https://www.schoolspecialty.com',
+                                'urlPrefixForHTTP': 'http://www.schoolspecialty.com',
+                                'wcc_integration_origin': '',
+                                'avToken': 'fc358ed3-dee6-40ed-92ba-e8946491838a',
+                                'avURL': 'https://api.edq.com/capture/address/v2/search?query=',
+                                'avCountryCode': 'usa',
+                                'userId': '-1002',
+                                'enableSKUListView': 'FALSE',
+                                'widgetPrefix': '6_3074457345618288753',
+                                'pgl_widgetId': '3074457345618288753',
+                                'objectId': '_6_3074457345618259675_3074457345618288753',
+                                'requesttype': 'ajax',
+                            }
+                            response = requests.post('https://www.schoolspecialty.com/ProductListingView',
+                                                     params=params, cookies=cookies, headers=post_header,
+                                                     data=payload)
+                            page_soup = BeautifulSoup(response.text, 'html.parser')
+                            if page_soup is None:
+                                continue
+                            content_url = page_soup.find_all('div', class_='product_info item')
                             for single_content in content_url:
                                 product_name = get_product_name(single_content)
                                 product_url = get_product_url(single_content)
@@ -424,14 +394,12 @@ if __name__ == '__main__':
                                 product_quantity = get_product_quantity(single_content)
                                 product_id = get_product_id(single_content)
                                 print(product_url)
-                                if product_url in read_log_file():
+                                if product_id in read_log_file():
                                     continue
                                 print('current datetime------>', datetime.now())
-                                dictionary_3 = get_dictionary(product_ids=product_id, product_names=product_name,
-                                                              product_quantities=product_quantity,
-                                                              product_prices=product_price,
-                                                              product_urls=product_url)
-                                articles_df = pd.DataFrame([dictionary_3])
+                                dictionary_2 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                                                              product_quantities=product_quantity, product_prices=product_price, product_urls=product_url)
+                                articles_df = pd.DataFrame([dictionary_2])
                                 articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
                                                             inplace=True)
                                 if os.path.isfile(f'{file_name}.csv'):
@@ -439,4 +407,26 @@ if __name__ == '__main__':
                                 else:
                                     articles_df.to_csv(f'{file_name}.csv', index=False)
                                 write_visited_log(product_id)
-                        write_visited_log(main_url)
+                    else:
+                        content_url = inner_request.find_all('div', class_='product_info item')
+                        for single_content in content_url:
+                            product_name = get_product_name(single_content)
+                            product_url = get_product_url(single_content)
+                            product_price = get_product_price(single_content)
+                            product_quantity = get_product_quantity(single_content)
+                            product_id = get_product_id(single_content)
+                            print(product_url)
+                            if product_url in read_log_file():
+                                continue
+                            print('current datetime------>', datetime.now())
+                            dictionary_3 = get_dictionary(product_category=product_category, product_sub_category=product_sub_category, product_ids=product_id, product_names=product_name,
+                                                          product_quantities=product_quantity, product_prices=product_price, product_urls=product_url)
+                            articles_df = pd.DataFrame([dictionary_3])
+                            articles_df.drop_duplicates(subset=['product_id', 'product_name'], keep='first',
+                                                        inplace=True)
+                            if os.path.isfile(f'{file_name}.csv'):
+                                articles_df.to_csv(f'{file_name}.csv', index=False, header=False, mode='a')
+                            else:
+                                articles_df.to_csv(f'{file_name}.csv', index=False)
+                            write_visited_log(product_id)
+                    write_visited_log(main_url)
